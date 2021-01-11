@@ -12,6 +12,7 @@ web-build/
 test1.js
 server/node_modules
 server/.env
+debug.log
 
 # macOS
 .DS_Store

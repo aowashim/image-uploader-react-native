@@ -1,16 +1,30 @@
-import React, { useState } from 'react'
-import { View, StyleSheet, ScrollView, Alert } from 'react-native'
+import React, { useState, useRef } from 'react'
+import {
+  View,
+  StyleSheet,
+  ScrollView,
+  Alert,
+  ActivityIndicator,
+  Text,
+} from 'react-native'
 import { Button, TextInput } from 'react-native-paper'
 import { storeData } from '../storage/asyncStore'
 import { pickFromCamera, pickFromGallery } from '../storage/pickAndSaveImg'
+import { saveImg } from '../storage/saveDeleteImg'
+import { upload } from '../helpers/upload'
+import * as Network from 'expo-network'
 
 export default function HomeScreen({ navigation }) {
   const [btnSelected, setBtnSelected] = useState()
-  const [uploadId, setUploadId] = useState('')
+  const [uploading, setUploading] = useState(false)
+  //const [uploadId, setUploadId] = useState('')
+  const uploadId = useRef('')
   const [des1, setDes1] = useState('')
   const [des2, setDes2] = useState('')
-  const [img1Uri, setImg1Uri] = useState('')
-  const [img2Uri, setImg2Uri] = useState('')
+  //const [img1Uri, setImg1Uri] = useState('')
+  //const [img2Uri, setImg2Uri] = useState('')
+  const img1Uri = useRef('')
+  const img2Uri = useRef('')
   const [btnDeactivated, setBtnDeactivated] = useState(true)
   const [img1Upld, setImg1Upld] = useState(false)
   const [img2Upld, setImg2Upld] = useState(false)
@@ -22,22 +36,28 @@ export default function HomeScreen({ navigation }) {
     }${date.getDate()}${date.getHours()}${date.getMinutes()}${date.getSeconds()}${date.getMilliseconds()}`
   }
 
-  const handleCamera = async () => {
+  const saveOffline = async userInfo => {
     let imgId
-    if (btnSelected === 'btn1') {
-      imgId = 'img1_' + uploadId
-    } else if (btnSelected === 'btn2') {
-      imgId = 'img2_' + uploadId
-    }
+    imgId = 'img1_' + uploadId.current
+    userInfo.img1Uri = await saveImg(img1Uri.current, imgId)
 
-    const imgUri = await pickFromCamera(imgId)
+    imgId = 'img2_' + uploadId.current
+    userInfo.img2Uri = await saveImg(img2Uri.current, imgId)
+
+    await storeData(userInfo, uploadId.current)
+  }
+
+  const handleCamera = async () => {
+    const imgUri = await pickFromCamera()
 
     if (btnSelected === 'btn1' && imgUri) {
-      setImg1Uri(imgUri)
+      //setImg1Uri(imgUri)
+      img1Uri.current = imgUri
       setImg1Upld(true)
       //console.log(imgUri)
     } else if (btnSelected === 'btn2' && imgUri) {
-      setImg2Uri(imgUri)
+      //setImg2Uri(imgUri)
+      img2Uri.current = imgUri
       setImg2Upld(true)
       //console.log(imgUri)
     }
@@ -46,55 +66,89 @@ export default function HomeScreen({ navigation }) {
 
   //console.log('hm')
   const handleGallery = async () => {
-    let imgId
-    if (btnSelected === 'btn1') {
-      imgId = 'img1_' + uploadId
-    } else if (btnSelected === 'btn2') {
-      imgId = 'img2_' + uploadId
-    }
-
-    const imgUri = await pickFromGallery(imgId)
+    const imgUri = await pickFromGallery()
 
     if (btnSelected === 'btn1' && imgUri) {
-      setImg1Uri(imgUri)
+      //setImg1Uri(imgUri)
+      img1Uri.current = imgUri
       setImg1Upld(true)
       //console.log(imgUri)
     } else if (btnSelected === 'btn2' && imgUri) {
-      setImg2Uri(imgUri)
+      //setImg2Uri(imgUri)
+      img2Uri.current = imgUri
       setImg2Upld(true)
       //console.log(imgUri)
     }
     setBtnDeactivated(true)
   }
 
-  // const handleGetData = async key => {
-  //   const arr = await getAllKeys()
-  //   // const val = await getData(`${key}`)
-  //   console.log(arr)
-  //   //await removeValue()
-  // }
+  const handleSaveLater = async userInfo => {
+    await saveOffline(userInfo)
+    Alert.alert('Saved.', 'Your data is saved successfully.')
+    handleCancel()
+  }
+
+  const handleSubmitNow = async userInfo => {
+    try {
+      const nt = await Network.getNetworkStateAsync()
+      if (nt.isConnected && nt.isInternetReachable) {
+        setUploading(true)
+        const success = await upload(userInfo)
+        if (success) {
+          Alert.alert('Uploaded.', 'Your data is uploaded successfully.')
+        } else {
+          await saveOffline(userInfo)
+          Alert.alert('Failed.', 'But your data is saved successfully.')
+        }
+        handleCancel()
+        setUploading(false)
+      } else {
+        Alert.alert('No internet.', 'Please try again later.')
+      }
+    } catch {
+      Alert.alert('No internet.', 'Please try again later.')
+    }
+  }
 
   const handleSubmit = key => {
-    if (img1Uri === '' || des1 === '' || img2Uri === '' || des2 === '')
-      return Alert.alert('Not Saved', 'All fields are required...')
+    if (
+      img1Uri.current === '' ||
+      des1 === '' ||
+      img2Uri.current === '' ||
+      des2 === ''
+    ) {
+      return Alert.alert("Can't submit.", 'All fields are required.')
+    } else {
+      const userInfo = {
+        uploadId: uploadId.current,
+        img1Uri: img1Uri.current,
+        img2Uri: img2Uri.current,
+        des1,
+        des2,
+      }
 
-    storeData({ uploadId, img1Uri, img2Uri, des1, des2 }, `${key}`)
-    Alert.alert('Saved', 'Data saved successfully...')
-    setUploadId('')
-    setDes1('')
-    setDes2('')
-    setImg1Uri('')
-    setImg2Uri('')
-    setImg1Upld(false)
-    setImg2Upld(false)
+      Alert.alert('Save your data.', 'Please choose an option.', [
+        {
+          text: 'Save for later',
+          onPress: () => handleSaveLater(userInfo),
+        },
+        {
+          text: 'Cancel',
+        },
+        { text: 'Upload now', onPress: () => handleSubmitNow(userInfo) },
+      ])
+    }
   }
 
   const handleCancel = () => {
-    setUploadId('')
+    //setUploadId('')
+    uploadId.current = ''
     setDes1('')
     setDes2('')
-    setImg1Uri('')
-    setImg2Uri('')
+    //setImg1Uri('')
+    //setImg2Uri('')
+    img1Uri.current = ''
+    img2Uri.current = ''
     setImg1Upld(false)
     setImg2Upld(false)
     setBtnDeactivated(true)
@@ -104,8 +158,9 @@ export default function HomeScreen({ navigation }) {
     setBtnDeactivated(false)
     setBtnSelected('btn1')
 
-    if (uploadId === '') {
-      setUploadId(generateId())
+    if (uploadId.current === '') {
+      //setUploadId(generateId())
+      uploadId.current = generateId()
     }
   }
 
@@ -113,12 +168,20 @@ export default function HomeScreen({ navigation }) {
     setBtnDeactivated(false)
     setBtnSelected('btn2')
 
-    if (uploadId === '') {
-      setUploadId(generateId())
+    if (uploadId.current === '') {
+      //setUploadId(generateId())
+      uploadId.current = generateId()
     }
   }
 
-  return (
+  return uploading ? (
+    <View style={{ flex: 1, justifyContent: 'center' }}>
+      <ActivityIndicator size='large' color='#00ff00' />
+      <View style={{ alignItems: 'center', marginTop: 10 }}>
+        <Text>Uploading...</Text>
+      </View>
+    </View>
+  ) : (
     <ScrollView>
       <View style={styles.container}>
         <View style={styles.btnCamGal}>
@@ -181,26 +244,12 @@ export default function HomeScreen({ navigation }) {
           icon='content-save-all'
           mode='contained'
           style={{ marginBottom: 15 }}
-          onPress={() => handleSubmit(uploadId)}
+          onPress={() => handleSubmit(uploadId.current)}
         >
-          Save
+          Submit
         </Button>
         <Button icon='close' mode='contained' onPress={() => handleCancel()}>
-          Cancel
-        </Button>
-        {/* {<Button
-        icon='circle-outline'
-        mode='contained'
-        onPress={() => handleGetData(uploadId)}
-      >
-        Get Info
-      </Button>} */}
-        <Button
-          mode='contained'
-          style={{ marginTop: 30, marginHorizontal: 30 }}
-          onPress={() => navigation.navigate('Images')}
-        >
-          Display Images
+          Clear
         </Button>
       </View>
     </ScrollView>
@@ -217,6 +266,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-around',
     padding: 10,
+    marginTop: 5,
     marginBottom: 20,
   },
 })

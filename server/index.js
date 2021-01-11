@@ -7,10 +7,6 @@ const app = express()
 app.use(express.json())
 app.use(express.urlencoded({ extended: true }))
 
-// app.get('/', (req, res) => {
-//   res.send('<h1>yes</h1>')
-// })
-
 app.post('/upload', (req, res) => {
   const data = req.body
 
@@ -25,9 +21,9 @@ app.post('/upload', (req, res) => {
   myConnection.connect(err => {
     if (err) {
       console.log(err.message)
-      throw err
+      return res.status(500).send('Server error...')
     } else {
-      console.log('Connected...')
+      //console.log('Connected...')
     }
   })
 
@@ -35,30 +31,22 @@ app.post('/upload', (req, res) => {
     `insert into info values('${data.uploadId}', '${data.img1Uri}', '${data.des1}', '${data.img2Uri}', '${data.des2}')`,
     (err, results) => {
       if (err) {
-        throw err
+        return res.status(500).json({ message: 'Server error...' })
       } else {
         res.send(data)
-        console.log('Inserted...')
+        //console.log('Inserted...')
       }
     }
   )
 
   myConnection.end(err => {
     if (err) {
-      throw err
+      console.log(err.message)
     } else {
-      console.log('Disconnected...')
+      //console.log('Disconnected...')
     }
   })
 })
-
-// myConnection.query('select * from info', (err, results) => {
-//   if (err) {
-//     throw err
-//   } else {
-//     console.log(res[0])
-//   }
-// })
 
 const PORT = process.env.PORT || 5000
 
