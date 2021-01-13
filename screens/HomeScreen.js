@@ -5,9 +5,8 @@ import {
   ScrollView,
   Alert,
   ActivityIndicator,
-  Text,
 } from 'react-native'
-import { Button, TextInput } from 'react-native-paper'
+import { Button, TextInput, Text } from 'react-native-paper'
 import { storeData } from '../storage/asyncStore'
 import { pickFromCamera, pickFromGallery } from '../storage/pickAndSaveImg'
 import { saveImg } from '../storage/saveDeleteImg'

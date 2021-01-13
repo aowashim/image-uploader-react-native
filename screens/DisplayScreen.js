@@ -1,7 +1,6 @@
-import React, { useState, useEffect, useRef } from 'react'
+import React, { useState, useEffect, useRef, useContext } from 'react'
 import {
   StyleSheet,
-  Text,
   View,
   FlatList,
   TouchableHighlight,
@@ -10,11 +9,13 @@ import {
   Dimensions,
   ActivityIndicator,
 } from 'react-native'
+import { Text } from 'react-native-paper'
 import { getAllKeys, removeValue, getData } from '../storage/asyncStore'
 import { Entypo } from '@expo/vector-icons'
 import { deleteImg } from '../storage/saveDeleteImg'
 import { upload } from '../helpers/upload'
 import * as Network from 'expo-network'
+import AppContext from '../store/AppContext'
 
 export default function DisplayScreen() {
   //const [keyArr, setKeyArr] = useState([])
@@ -24,6 +25,7 @@ export default function DisplayScreen() {
   const [imgInfo, setImgInfo] = useState([])
   const [uploading, setUploading] = useState(false)
   const [pull, setPull] = useState(false)
+  const [scheme] = useContext(AppContext)
 
   useEffect(() => {
     const allKeys = async () => {
@@ -93,9 +95,12 @@ export default function DisplayScreen() {
         <TouchableHighlight
           activeOpacity={0.6}
           underlayColor='#a7aba8'
-          style={styles.itemContainer}
+          style={{
+            ...styles.itemContainer,
+            borderColor: scheme === 'dark' ? '#165166' : '#1b2529',
+          }}
           onLongPress={() => uploadItem(itemData.item)}
-          //onPress={() => console.log(itemData.item)}
+          //onPress={() => console.log(scheme)}
         >
           <View
             style={
@@ -146,7 +151,7 @@ export default function DisplayScreen() {
         data={noData.current}
         renderItem={data => (
           <View style={{ alignItems: 'center', margin: 10 }}>
-            <Entypo name='emoji-sad' size={24} color='black' />
+            <Entypo name='emoji-sad' size={24} color='#34686b' />
             <Text style={{ marginTop: 10 }}>
               {data.item.msg} Pull down to refresh.
             </Text>
@@ -167,7 +172,7 @@ const styles = StyleSheet.create({
   },
   itemContainer: {
     borderStyle: 'solid',
-    borderColor: '#1b1c1c',
+    //borderColor: '#1b1c1c',
     borderWidth: 1,
     marginBottom: 10,
   },
