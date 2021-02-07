@@ -8,6 +8,8 @@ import {
   Alert,
   Dimensions,
   ActivityIndicator,
+  Platform,
+  ToastAndroid,
 } from 'react-native'
 import { Text } from 'react-native-paper'
 import { getAllKeys, removeValue, getData } from '../storage/asyncStore'
@@ -76,17 +78,33 @@ export default function DisplayScreen() {
           if (success) {
             await deleteImg(item.img1Uri, item.img2Uri)
             await removeImg(item.uploadId)
-            Alert.alert('Uploaded.', 'Your data is uploaded successfully.')
+            if (Platform.OS === 'android') {
+              ToastAndroid.show(
+                'Your data is uploaded successfully.',
+                ToastAndroid.LONG
+              )
+            } else
+              Alert.alert('Uploaded.', 'Your data is uploaded successfully.')
           } else {
             Alert.alert('Failed.', 'Upload unsuccessful due a server error.')
           }
 
           setUploading(false)
         } else {
-          Alert.alert('No internet.', 'Please try again later.')
+          if (Platform.OS === 'android') {
+            ToastAndroid.show(
+              'No internet. Please try again later.',
+              ToastAndroid.SHORT
+            )
+          } else Alert.alert('No internet.', 'Please try again later.')
         }
       } catch {
-        Alert.alert('No internet.', 'Please try again later.')
+        if (Platform.OS === 'android') {
+          ToastAndroid.show(
+            'No internet. Please try again later.',
+            ToastAndroid.SHORT
+          )
+        } else Alert.alert('No internet.', 'Please try again later.')
       }
     }
 
@@ -94,13 +112,14 @@ export default function DisplayScreen() {
       return (
         <TouchableHighlight
           activeOpacity={0.6}
-          underlayColor='#a7aba8'
+          underlayColor={scheme === 'dark' ? '#262926' : '#a7aba8'}
           style={{
             ...styles.itemContainer,
             borderColor: scheme === 'dark' ? '#165166' : '#1b2529',
           }}
           onLongPress={() => uploadItem(itemData.item)}
-          //onPress={() => console.log(scheme)}
+          //onLongPress={() => console.log('prs')}
+          //onPress={() => console.log(itemData.item)}
         >
           <View
             style={
@@ -172,7 +191,6 @@ const styles = StyleSheet.create({
   },
   itemContainer: {
     borderStyle: 'solid',
-    //borderColor: '#1b1c1c',
     borderWidth: 1,
     marginBottom: 10,
   },

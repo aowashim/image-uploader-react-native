@@ -1,0 +1,7 @@
+export const GENDER = ['Male', 'Female', 'Others']
+export const RELATION = ['Father', 'Mother', 'Others']
+export const ZONE = ['zabc', 'zxyz', 'zpqr']
+export const RACE = ['rabc', 'rxyz', 'rpqr']
+export const VARNA = ['vaWWbc', 'vxEyz', 'vpqRRr']
+export const QUALIFICATION = ['qaSSbc', 'qxySz', 'qpqAr']
+export const PROFESSION = ['pabcWT', 'pxYYRRyz', 'pWWpqr']
